@@ -1,0 +1,104 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: 1234Aa
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    networks:
+      - airflow-net
+
+  redis:
+    image: redis:latest
+    networks:
+      - airflow-net
+
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: airflow-custom:latest
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:1234Aa@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:1234Aa@postgres/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: my_super_secret_key
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Almaty
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    ports:
+      - "8080:8080"
+    command: webserver
+    restart: always
+    networks:
+      - airflow-net
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: airflow-custom:latest
+    depends_on:
+      - airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:1234Aa@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:1234Aa@postgres/airflow
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Almaty
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    command: scheduler
+    restart: always
+    networks:
+      - airflow-net
+
+  airflow-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: airflow-custom:latest
+    depends_on:
+      - airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:1234Aa@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:1234Aa@postgres/airflow  
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Almaty
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+    command: celery worker
+    restart: always
+    networks:
+      - airflow-net
+      
+  selenium:
+    container_name: remote_chromedriver
+    image: seleniarm/standalone-chromium:latest
+    ports:
+      - "4444:4444"
+    restart: always
+    networks:
+      - airflow-net
+
+volumes:
+  postgres-db-volume:
+
+networks:
+  airflow-net:
+    driver: bridge

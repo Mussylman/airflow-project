@@ -1,0 +1,8 @@
+pandas
+sqlalchemy
+psycopg2-binary
+pyTelegramBotAPI
+python-dotenv
+selenium
+webdriver-manager>=4.0.0
+beautifulsoup4

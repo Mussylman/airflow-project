@@ -8,7 +8,7 @@ Dockerized Apache Airflow with CeleryExecutor, PostgreSQL, Redis, and Selenium W
 
 ```bash
 # Клонируй репозиторий
-git clone https://github.com/<your-username>/airflow-project.git
+git clone https://github.com/Mussylman/airflow-project
 cd airflow-project
 
 # Запусти Airflow + Redis + Postgres + Selenium
